@@ -1,0 +1,16 @@
+#IntelliJ
+.idea
+*.iml
+.run
+
+#OS
+.DS_Store
+
+#Generated
+target
+
+#VSCode
+.classpath
+.factorypath
+.project
+.settings
