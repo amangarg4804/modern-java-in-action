@@ -1,10 +1,14 @@
 package chapter6;
 
+import chapter6.Dish.CaloricLevel;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.IntSummaryStatistics;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.stream.Collectors.*;
 
@@ -22,11 +26,10 @@ public class TestCollectors {
         new Dish("prawns", false, 300, Dish.Type.FISH),
         new Dish("salmon", false, 450, Dish.Type.FISH));
 
-
     // Maximum Calorie dish
     Comparator<Dish> dishCaloriesComparator = Comparator.comparingInt(Dish::getCalories);
     Optional<Dish> mostCalorieDish = menu.stream()
-            .collect(maxBy(dishCaloriesComparator));
+        .collect(maxBy(dishCaloriesComparator));
 
     // total calories
     int totalCalories = menu.stream().collect(summingInt(Dish::getCalories));
@@ -49,6 +52,42 @@ public class TestCollectors {
     Optional<Dish> mostCalorieDishGen =
         menu.stream().collect(reducing(
             (d1, d2) -> d1.getCalories() > d2.getCalories() ? d1 : d2));
+
+    // multilevel Grouping
+    Map<Dish.Type, Map<CaloricLevel, List<Dish>>> dishesByTypeCaloricLevel = menu.stream()
+        .collect(groupingBy(Dish::getType, groupingBy(dish -> {
+              if (dish.getCalories() <= 400) {
+                return CaloricLevel.DIET;
+              } else if (dish.getCalories() <= 700) {
+                return CaloricLevel.NORMAL;
+              } else {
+                return CaloricLevel.FAT;
+              }
+            })
+            )
+        );
+
+    // More generally, the collector passed as second argument to the groupingBy factory
+    //method will be used to perform a further reduction operation on all the elements in
+    //the stream classified into the same group.
+
+    Map<Dish.Type, Integer> totalCaloriesByType =
+        menu.stream().collect(groupingBy(Dish::getType,
+            summingInt(Dish::getCalories)));
+
+    // mapping with grouping by + toCollection to define which implmentation is used
+    Map<Dish.Type, Set<CaloricLevel>> caloricLevelsByType =
+        menu.stream().collect(
+            groupingBy(Dish::getType, mapping(dish -> {
+                  if (dish.getCalories() <= 400) return CaloricLevel.DIET;
+                  else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+                  else return CaloricLevel.FAT; },
+                toCollection(HashSet::new) )));
+
+    // Partitioning has the advantage (over filter) of keeping both lists of the stream elements, for which
+    //the application of the partitioning function returns true or false
+    Map<Boolean, List<Dish>> partitionedMenu =
+        menu.stream().collect(partitioningBy(Dish::isVegetarian));
 
   }
 }
